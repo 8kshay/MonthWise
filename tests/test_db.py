@@ -48,6 +48,7 @@ class DatabaseTests(unittest.TestCase):
         self.assertEqual([m["month"] for m in months], ["2026-09", "2026-10", "2026-11"])
         self.assertEqual([m["spent"] for m in months], [0, 100000, 95000])
         self.assertEqual(self.db.months_with_data(), ["2026-11", "2026-10"])
+        self.assertEqual(self.db.daily_spent("2026-11"), {2: 30000, 9: 65000})  # credits left out
 
     def test_search(self):
         self.db.add_transaction(D(2026, 11, 1), 100, "debit", "Food", "Pizza night")

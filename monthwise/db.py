@@ -255,6 +255,14 @@ class Database:
                            "net": income - spent})
         return result
 
+    def daily_spent(self, month) -> dict[int, int]:
+        """Money out per day of the month: {day: paise}. Days with no spending are left out."""
+        rows = self.conn.execute(
+            "SELECT CAST(substr(date, 9, 2) AS INTEGER) AS day, SUM(amount) AS total "
+            "FROM transactions WHERE substr(date, 1, 7) = ? AND kind = 'debit' GROUP BY day",
+            (month,))
+        return {r["day"]: r["total"] for r in rows}
+
     def months_with_data(self) -> list[str]:
         rows = self.conn.execute(
             "SELECT DISTINCT substr(date, 1, 7) AS month FROM transactions ORDER BY month DESC")

@@ -109,6 +109,19 @@ class UiSmokeTest(unittest.TestCase):
         picker.today_button.invoke()
         self.assertEqual(self.app.month.get(), this_month)
 
+    def test_line_chart_page(self):
+        charts = self.app.tabs[3]
+        self.app.notebook.select(3)
+        charts.pages.select(1)  # "Through the month", blank user: shows the empty message
+        self.app.update()
+        texts = [t.get_text() for ax in charts.trend_figure.axes for t in ax.texts]
+        self.assertIn("No spending recorded in these months yet", texts)
+        self.app.switch_user("demo")
+        self.app.update()
+        legend = charts.trend_figure.axes[0].get_legend()
+        self.assertEqual(len(legend.get_texts()), 4)  # this month + 3 before it
+        self.assertIn("so far", legend.get_texts()[0].get_text())
+
     def test_switch_users(self):
         self.assertEqual(self.app.user, "mine")
         self.assertEqual(self.app.db.transactions(), [])
