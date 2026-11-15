@@ -1,7 +1,6 @@
-"""All saving and loading. One SQLite file, by default %APPDATA%\\Monthwise\\monthwise.db."""
+"""All saving and loading. One SQLite file per user (see users.py for where they live)."""
 
 import datetime as dt
-import os
 import sqlite3
 from pathlib import Path
 
@@ -50,14 +49,6 @@ CREATE TABLE IF NOT EXISTS settings (
 """
 
 
-def default_db_path() -> Path:
-    override = os.environ.get("MONTHWISE_DB")
-    if override:
-        return Path(override)
-    base = os.environ.get("APPDATA") or str(Path.home())
-    return Path(base) / "Monthwise" / "monthwise.db"
-
-
 def _clean_name(name: str) -> str:
     cleaned = " ".join((name or "").split())
     if not cleaned:
@@ -68,8 +59,8 @@ def _clean_name(name: str) -> str:
 
 
 class Database:
-    def __init__(self, path=None):
-        self.path = str(path) if path else str(default_db_path())
+    def __init__(self, path):
+        self.path = str(path)
         if self.path != ":memory:":
             Path(self.path).parent.mkdir(parents=True, exist_ok=True)
         self.conn = sqlite3.connect(self.path)
@@ -77,14 +68,23 @@ class Database:
         with self.conn:
             self.conn.executescript(_SCHEMA)
             if self.conn.execute("PRAGMA user_version").fetchone()[0] == 0:
-                for position, name in enumerate(DEFAULT_CATEGORIES):
-                    self.conn.execute(
-                        "INSERT OR IGNORE INTO categories(name, position) VALUES (?, ?)",
-                        (name, position))
+                self._insert_default_categories()
                 self.conn.execute("PRAGMA user_version = 1")
+
+    def _insert_default_categories(self):
+        for position, name in enumerate(DEFAULT_CATEGORIES):
+            self.conn.execute("INSERT OR IGNORE INTO categories(name, position) VALUES (?, ?)",
+                              (name, position))
 
     def close(self):
         self.conn.close()
+
+    def clear_all(self):
+        """Remove every transaction, budget, recurring entry and custom category."""
+        with self.conn:
+            for table in ("transactions", "recurring", "budgets", "categories"):
+                self.conn.execute(f"DELETE FROM {table}")
+            self._insert_default_categories()
 
     # ---------- settings ----------
     def get_setting(self, key, default=None):

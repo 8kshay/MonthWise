@@ -38,6 +38,12 @@ Why: Akshay's answers: expense tracking, simple to use, good looking, offline, m
 Approved by: Akshay
 Notes: dates are typed and shown as DD-MM-YYYY; "Salary" was added to the starter categories for money in; amounts are stored as whole paise to avoid rounding errors.
 
+## 2026-11-15 — Users: Demo and My data
+Decision: A "User" dropdown at the top switches between two users, each with its own data file: Demo (generated sample data for showing the app, with a "Reset demo data" button in Settings → Data that regenerates 6 months up to today) and My data (starts blank). Only these two users for now. Theme and last-used user are app-wide (prefs.json). The existing monthwise.db (sample data plus Akshay's test entry) became the Demo user's data.
+Why: Akshay wants a ready demo and a clean space to enter his own examples.
+Approved by: Akshay (chose all recommended options)
+Also: the month picker now drives the Add tab's totals, uses "‹ Prev" / "Next ›" buttons and the mouse wheel (Akshay reported it wasn't working).
+
 ## 2026-11-15 — Open issue: Smart App Control blocks the .exe
 Finding: dist\Monthwise.exe builds correctly (all files verified inside it), but this PC has Windows Smart App Control turned On, and it blocked the unsigned .exe from starting ("An Application Control policy has blocked this file"). Other PCs with Smart App Control on will block it too.
 Options (Akshay to decide):

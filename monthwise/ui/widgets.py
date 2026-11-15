@@ -12,21 +12,35 @@ PAD = 16
 
 
 class MonthPicker(ttk.Frame):
-    """‹  November 2026  ›   [This month]"""
+    """[‹ Prev]  November 2026  [Next ›]  [This month]   (mouse wheel over it also works)"""
 
     def __init__(self, master, month_var: tk.StringVar):
         super().__init__(master)
         self.month_var = month_var
-        ttk.Button(self, text="‹", width=3, command=lambda: self.shift(-1)).pack(side="left")
+        self.prev_button = ttk.Button(self, text="‹  Prev", command=lambda: self.shift(-1))
+        self.prev_button.pack(side="left")
         self.label = ttk.Label(self, style="Month.TLabel", width=15, anchor="center")
         self.label.pack(side="left", padx=6)
-        ttk.Button(self, text="›", width=3, command=lambda: self.shift(1)).pack(side="left")
-        ttk.Button(self, text="This month", command=self.today).pack(side="left", padx=(10, 0))
+        self.next_button = ttk.Button(self, text="Next  ›", command=lambda: self.shift(1))
+        self.next_button.pack(side="left")
+        self.today_button = ttk.Button(self, text="This month", command=self.today)
+        self.today_button.pack(side="left", padx=(10, 0))
+        for widget in (self, self.label, self.prev_button, self.next_button):
+            widget.bind("<MouseWheel>", self._wheel)
         month_var.trace_add("write", lambda *_: self._show())
         self._show()
 
+    def _wheel(self, event):
+        self.shift(1 if event.delta < 0 else -1)  # scroll down = later month
+        return "break"
+
     def _show(self):
-        self.label.configure(text=month_label(self.month_var.get()))
+        key = self.month_var.get()
+        self.label.configure(text=month_label(key))
+        if key == month_key(dt.date.today()):
+            self.today_button.state(["disabled"])
+        else:
+            self.today_button.state(["!disabled"])
 
     def shift(self, n):
         self.month_var.set(add_months(self.month_var.get(), n))

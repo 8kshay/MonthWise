@@ -45,11 +45,14 @@ class AddTab(ttk.Frame):
             label.pack(anchor="w")
             self.stat_labels[key] = label
 
-        right = ttk.LabelFrame(self, text=" Recent entries ", padding=PAD)
+        right = ttk.LabelFrame(self, text=" Latest entries (all months) ", padding=PAD)
         right.grid(row=0, column=1, sticky="nsew")
         self.recent = Table(right, [("date", "Date", 95, "w"), ("category", "Category", 110, "w"),
                                     ("amount", "Amount", 110, "e")], height=14)
         self.recent.pack(fill="both", expand=True)
+        self.empty_note = ttk.Label(right, style="Muted.TLabel", wraplength=320, justify="left",
+                                    text="No entries yet. Fill in the form on the left and press "
+                                         "Save; your entries appear here.")
 
         for widget in (self, left):
             widget.bind("<Return>", lambda _e: self.save())
@@ -76,9 +79,10 @@ class AddTab(ttk.Frame):
     def refresh(self):
         db = self.app.db
         self.form.set_categories(db.categories())
-        current = month_key(dt.date.today())
-        self.month_caption.configure(text=f"{month_label(current)} so far")
-        totals = db.month_totals(current)
+        month = self.app.month.get()  # follows the month picker at the top
+        so_far = " so far" if month == month_key(dt.date.today()) else ""
+        self.month_caption.configure(text=f"{month_label(month)}{so_far}")
+        totals = db.month_totals(month)
         p = theme.colors(self.app.mode)
         for key, label in self.stat_labels.items():
             style = "Heading.TLabel"
@@ -96,3 +100,7 @@ class AddTab(ttk.Frame):
                          (t["kind"],)))
         self.recent.fill(rows)
         self.recent.tree.tag_configure("credit", foreground=p["positive"])
+        if rows:
+            self.empty_note.pack_forget()
+        else:
+            self.empty_note.pack(anchor="w", pady=(0, 10), before=self.recent)

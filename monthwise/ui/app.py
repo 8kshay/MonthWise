@@ -8,8 +8,8 @@ from tkinter import messagebox, ttk
 
 from .. import APP_NAME, __version__
 from ..dates import month_key
-from ..db import Database
 from ..paths import resource_path
+from ..users import USERS, UserStore
 from . import theme
 from .add_tab import AddTab
 from .charts_tab import ChartsTab
@@ -20,15 +20,16 @@ from .widgets import PAD, MonthPicker
 
 
 class MonthwiseApp(tk.Tk):
-    def __init__(self, db: Database):
+    def __init__(self, store: UserStore):
         super().__init__(className=APP_NAME)
-        self.db = db
+        self.store = store
+        self.user = store.last_user()
+        self.db = store.open(self.user)
         self.withdraw()
-        self.title(APP_NAME)
         self.geometry("1180x760")
         self.minsize(980, 640)
         self._set_icon()
-        self.mode = db.get_setting("theme", "light")
+        self.mode = store.get_pref("theme", "light")
         theme.apply(self, self.mode)
 
         self.month = tk.StringVar(value=month_key(dt.date.today()))
@@ -42,7 +43,16 @@ class MonthwiseApp(tk.Tk):
                   style="Subtitle.TLabel").pack(anchor="w")
         self.theme_button = ttk.Button(header, command=self.toggle_theme, width=12)
         self.theme_button.pack(side="right")
-        MonthPicker(header, self.month).pack(side="right", padx=(0, 24))
+        self.month_picker = MonthPicker(header, self.month)
+        self.month_picker.pack(side="right", padx=(0, 24))
+        users = ttk.Frame(header)
+        users.pack(side="right", padx=(0, 24))
+        ttk.Label(users, text="User").pack(side="left", padx=(0, 8))
+        self.user_var = tk.StringVar(value=USERS[self.user])
+        self.user_box = ttk.Combobox(users, textvariable=self.user_var, state="readonly",
+                                     width=10, values=list(USERS.values()))
+        self.user_box.pack(side="left")
+        self.user_box.bind("<<ComboboxSelected>>", self._user_chosen)
 
         self.notebook = ttk.Notebook(self)
         self.notebook.pack(fill="both", expand=True, padx=PAD, pady=(8, PAD))
@@ -59,15 +69,40 @@ class MonthwiseApp(tk.Tk):
         self.month.trace_add("write", lambda *_: self.refresh_all())
         self.bind_all("<Control-Tab>", self._next_tab)
 
-        created = db.apply_recurring()
         theme.recolor(self)
         self._update_theme_button()
+        self._update_title()
         self.refresh_all()
         self.deiconify()
+        self._apply_recurring()
+
+    def _update_title(self):
+        self.title(f"{APP_NAME} — {USERS[self.user]}")
+
+    def _apply_recurring(self):
+        created = self.db.apply_recurring()
         if created:
+            self.refresh_all()
             self.after(400, lambda: messagebox.showinfo(
                 APP_NAME, f"Added {created} recurring entr{'y' if created == 1 else 'ies'} "
                           "that came due.", parent=self))
+
+    def _user_chosen(self, _event=None):
+        label = self.user_var.get()
+        user = next(key for key, name in USERS.items() if name == label)
+        self.user_box.selection_clear()
+        self.switch_user(user)
+
+    def switch_user(self, user):
+        if user == self.user:
+            return
+        new_db = self.store.open(user)
+        self.db.close()
+        self.db, self.user = new_db, user
+        self.user_var.set(USERS[user])
+        self._update_title()
+        self.refresh_all()
+        self._apply_recurring()
 
     def _set_icon(self):
         ico = resource_path("assets", "monthwise.ico")
@@ -100,7 +135,7 @@ class MonthwiseApp(tk.Tk):
 
     def toggle_theme(self):
         self.mode = "dark" if self.mode == "light" else "light"
-        self.db.set_setting("theme", self.mode)
+        self.store.set_pref("theme", self.mode)
         theme.apply(self, self.mode)
         self._update_theme_button()
         self.refresh_all()
@@ -135,7 +170,8 @@ def _windows_setup():
 def run():
     _windows_setup()
     try:
-        db = Database()
+        store = UserStore()
+        app = MonthwiseApp(store)
     except Exception as error:  # noqa: BLE001 - show any startup failure to the user
         root = tk.Tk()
         root.withdraw()
@@ -143,7 +179,6 @@ def run():
         root.destroy()
         return
     try:
-        app = MonthwiseApp(db)
         app.mainloop()
     finally:
-        db.close()
+        app.db.close()

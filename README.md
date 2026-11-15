@@ -8,8 +8,9 @@ An offline expense tracker for Windows. Amounts are in Indian Rupees (₹).
 - **Charts**: a donut of where the month's money went, and spent vs received for the last 12 months.
 - **Settings**: add, rename and delete categories; set monthly budgets; recurring entries (rent, salary, subscriptions) that add themselves each month; CSV export/import; where the data file lives.
 - Light and dark theme (button at the top right). The month picker at the top drives every tab.
+- **Users** (dropdown at the top): **Demo** comes with 6 months of generated sample data for showing the app (Settings → Data → *Reset demo data* regenerates it up to today); **My data** starts blank for your own entries. The app reopens on the last user chosen.
 
-Data is saved in `%APPDATA%\Monthwise\monthwise.db`, so it survives replacing or moving the .exe.
+Data is saved in `%APPDATA%\Monthwise\`: `demo.db`, `mine.db` (one file per user) and `prefs.json` (theme and last user). It survives replacing or moving the .exe.
 
 ## Run from source
 ```
@@ -32,7 +33,7 @@ Runs the tests, then creates `dist\Monthwise.exe` (one file, ~40 MB, no Python n
 
 ## Files
 - `main.py`: starts the app
-- `monthwise/`: `db.py` (saving/loading), `money.py`, `dates.py`, `csvio.py`, and `ui/` (one file per tab, plus theme and shared widgets)
+- `monthwise/`: `db.py` (saving/loading), `users.py` (the two users and their files), `demo.py` (sample data), `money.py`, `dates.py`, `csvio.py`, and `ui/` (one file per tab, plus theme and shared widgets)
 - `tests/`: automated checks
 - `assets/`: app icon (made by `tools/make_icon.py`)
 

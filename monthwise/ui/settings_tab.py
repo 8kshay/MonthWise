@@ -3,7 +3,9 @@
 import os
 from tkinter import filedialog, messagebox, ttk
 
+from .. import demo
 from ..csvio import FIELDS, export_csv, import_csv
+from ..users import USERS
 from ..dates import month_label
 from ..money import format_inr, parse_amount, to_plain
 from . import theme
@@ -180,14 +182,32 @@ class SettingsTab(ttk.Frame):
         ttk.Button(row, text="Import from CSV…", command=self.import_file).pack(side="left",
                                                                                    padx=8)
         ttk.Separator(page).pack(fill="x", pady=PAD)
-        ttk.Label(page, text="Where your data is saved", style="Heading.TLabel").pack(anchor="w")
-        ttk.Label(page, text=self.app.db.path, style="Muted.TLabel").pack(anchor="w", pady=(4, 8))
-        ttk.Label(page, text="This file stays when you replace or move Monthwise.exe. "
-                             "Copy it to keep a full backup.",
+        self.where_heading = ttk.Label(page, style="Heading.TLabel")
+        self.where_heading.pack(anchor="w")
+        self.path_label = ttk.Label(page, style="Muted.TLabel")
+        self.path_label.pack(anchor="w", pady=(4, 8))
+        ttk.Label(page, text="Each user has its own file. It stays when you replace or move "
+                             "Monthwise.exe. Copy it to keep a full backup.",
                   style="Muted.TLabel").pack(anchor="w")
         ttk.Button(page, text="Open data folder", command=self.open_folder).pack(anchor="w",
                                                                                 pady=(10, 0))
+        ttk.Separator(page).pack(fill="x", pady=PAD)
+        ttk.Label(page, text="Demo data", style="Heading.TLabel").pack(anchor="w")
+        self.demo_note = ttk.Label(page, style="Muted.TLabel")
+        self.demo_note.pack(anchor="w", pady=(4, 8))
+        self.reset_button = ttk.Button(page, text="Reset demo data…", command=self.reset_demo)
+        self.reset_button.pack(anchor="w")
         return page
+
+    def reset_demo(self):
+        if self.app.user != "demo":
+            return
+        if messagebox.askyesno("Reset demo data",
+                               "Replace everything in the Demo user with fresh sample data for "
+                               "the last 6 months?\n\nAnything you added to Demo will be lost. "
+                               "'My data' is not touched.", icon="warning", parent=self):
+            demo.reset(self.app.db)
+            self.app.refresh_all()
 
     def export_all(self):
         path = filedialog.asksaveasfilename(parent=self, title="Export everything",
@@ -230,6 +250,16 @@ class SettingsTab(ttk.Frame):
     def refresh(self):
         db = self.app.db
         p = theme.colors(self.app.mode)
+        self.where_heading.configure(text=f"Where {USERS[self.app.user]}'s data is saved")
+        self.path_label.configure(text=db.path)
+        if self.app.user == "demo":
+            self.reset_button.state(["!disabled"])
+            self.demo_note.configure(text="Regenerate the Demo user's sample data so it covers "
+                                          "the 6 months up to today.")
+        else:
+            self.reset_button.state(["disabled"])
+            self.demo_note.configure(text="Switch to the Demo user (top of the window) to reset "
+                                          "its sample data.")
         budgets = db.budgets()
         rows = []
         for position, name in enumerate(db.categories()):

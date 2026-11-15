@@ -6,20 +6,22 @@ import tempfile
 import unittest
 
 from monthwise.dates import add_months, format_date, month_key
-from monthwise.db import Database
+from monthwise.users import UserStore
 
 
 class UiSmokeTest(unittest.TestCase):
     def setUp(self):
         self.folder = tempfile.TemporaryDirectory()
-        self.db = Database(os.path.join(self.folder.name, "ui.db"))
+        self.store = UserStore(self.folder.name)
+        self.store.set_pref("user", "mine")  # start on the blank user
         from monthwise.ui.app import MonthwiseApp
-        self.app = MonthwiseApp(self.db)
+        self.app = MonthwiseApp(self.store)
         self.app.withdraw()
+        self.db = self.app.db
 
     def tearDown(self):
+        self.app.db.close()
         self.app.destroy()
-        self.db.close()
         self.folder.cleanup()
 
     def visit_all_tabs(self):
@@ -73,8 +75,52 @@ class UiSmokeTest(unittest.TestCase):
         self.visit_all_tabs()
         self.app.toggle_theme()
         self.visit_all_tabs()
-        self.assertEqual(self.db.get_setting("theme"), "dark")
+        self.assertEqual(self.store.get_pref("theme"), "dark")
         self.app.toggle_theme()
+
+    def test_month_picker_moves_every_tab(self):
+        this_month = month_key(dt.date.today())
+        last_month = add_months(this_month, -1)
+        self.db.add_transaction(dt.date.fromisoformat(f"{last_month}-10"), 77700, "debit",
+                                "Food", "last month")
+        picker = self.app.month_picker
+        self.assertEqual(picker.today_button.instate(["disabled"]), True)
+
+        picker.prev_button.invoke()  # on the Add tab
+        self.app.update()
+        self.assertEqual(self.app.month.get(), last_month)
+        add_tab = self.app.tabs[0]
+        self.assertEqual(add_tab.stat_labels["spent"].cget("text"), "₹777.00")
+        self.assertNotIn("so far", add_tab.month_caption.cget("text"))
+        self.assertTrue(picker.today_button.instate(["!disabled"]))
+
+        self.app.notebook.select(1)
+        self.app.update()
+        self.assertEqual(len(self.app.tabs[1].table.tree.get_children()), 1)
+
+        picker.next_button.invoke()
+        self.app.update()
+        self.assertEqual(self.app.month.get(), this_month)
+        self.assertEqual(len(self.app.tabs[1].table.tree.get_children()), 0)
+
+        picker.event_generate("<MouseWheel>", delta=120)  # wheel up = earlier month
+        self.app.update()
+        self.assertEqual(self.app.month.get(), last_month)
+        picker.today_button.invoke()
+        self.assertEqual(self.app.month.get(), this_month)
+
+    def test_switch_users(self):
+        self.assertEqual(self.app.user, "mine")
+        self.assertEqual(self.app.db.transactions(), [])
+        self.assertIn("My data", self.app.title())
+        self.app.user_var.set("Demo")
+        self.app._user_chosen()
+        self.assertEqual(self.app.user, "demo")
+        self.assertGreater(len(self.app.db.transactions()), 100)
+        self.visit_all_tabs()
+        self.app.switch_user("mine")
+        self.assertEqual(self.app.db.transactions(), [])
+        self.assertEqual(self.store.last_user(), "mine")
 
     def test_dialogs_collect_values(self):
         from monthwise.ui.settings_tab import _parse_budget
