@@ -16,6 +16,7 @@ Data is saved in `%APPDATA%\Monthwise\`: `demo.db`, `mine.db` (one file per user
 ```
 .venv\Scripts\python.exe main.py
 ```
+On Akshay's PC there is also a **Monthwise** shortcut on the Desktop that does this without a console window (target: `.venv\Scripts\pythonw.exe main.py`). It only works while the project folder and `.venv` exist.
 First-time setup on a new PC: `python -m venv .venv` then `.venv\Scripts\python.exe -m pip install -r requirements.txt`.
 
 ## Tests

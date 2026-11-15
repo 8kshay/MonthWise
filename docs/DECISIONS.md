@@ -51,3 +51,4 @@ Options (Akshay to decide):
 2. Turn Smart App Control off on the PC that runs it (Windows Security > App & browser control). Lowers protection; on some Windows versions it can't be turned back on without resetting Windows.
 3. Run from source with Python on that PC (see README).
 Status: open
+Update (2026-11-15): Akshay chose a Desktop shortcut that runs the app from source (pythonw.exe main.py) for demos on this PC. The .exe is kept and still built by build.ps1; Smart App Control is left on; signing not decided.
