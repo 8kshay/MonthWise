@@ -28,3 +28,20 @@ Decision: This project uses the 8kshay GitHub account only (never 7kshay or any 
 Why: Akshay's instruction
 How: repo-only git setting credential.https://github.com.username = 8kshay. Git's sign-in goes through Git Credential Manager (system setting `credential.helper manager`); gh is signed in as 8kshay separately.
 Approved by: Akshay
+
+## 2026-11-15 — The app: Monthwise expense tracker (single release, all features)
+Decision: Build "Monthwise", an offline expense tracker, in one release (no staged versions). Currency: Indian Rupees (₹).
+Features: add transactions (date, amount, debit/credit, category, note); transactions table with month filter, search, edit, delete; summary per month (in, out, net, per category, budget status); charts (category split for a month, monthly spending comparison); editable categories; monthly budgets per category; recurring transactions (monthly); CSV export and import; light/dark theme.
+Layout: one window with tabs. Data in a SQLite file at %APPDATA%\Monthwise\monthwise.db so replacing the .exe never loses data.
+Packages (installed into .venv only): sv-ttk (modern Windows 11 style theme), matplotlib (charts), pyinstaller (build Monthwise.exe). Tests use Python's built-in unittest (no pytest).
+Why: Akshay's answers: expense tracking, simple to use, good looking, offline, must run as a .exe on another PC, everything in one go.
+Approved by: Akshay
+Notes: dates are typed and shown as DD-MM-YYYY; "Salary" was added to the starter categories for money in; amounts are stored as whole paise to avoid rounding errors.
+
+## 2026-11-15 — Open issue: Smart App Control blocks the .exe
+Finding: dist\Monthwise.exe builds correctly (all files verified inside it), but this PC has Windows Smart App Control turned On, and it blocked the unsigned .exe from starting ("An Application Control policy has blocked this file"). Other PCs with Smart App Control on will block it too.
+Options (Akshay to decide):
+1. Code-sign the .exe with a trusted certificate (paid; e.g. a code-signing certificate or Microsoft Trusted Signing). Works everywhere.
+2. Turn Smart App Control off on the PC that runs it (Windows Security > App & browser control). Lowers protection; on some Windows versions it can't be turned back on without resetting Windows.
+3. Run from source with Python on that PC (see README).
+Status: open
