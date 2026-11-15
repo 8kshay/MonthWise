@@ -52,3 +52,8 @@ Options (Akshay to decide):
 3. Run from source with Python on that PC (see README).
 Status: open
 Update (2026-11-15): Akshay chose a Desktop shortcut that runs the app from source (pythonw.exe main.py) for demos on this PC. The .exe is kept and still built by build.ps1; Smart App Control is left on; signing not decided.
+
+## 2026-11-15 — Line chart: spending through the month
+Decision: Charts tab gets a second page, "Through the month": a running total of money spent per day, with the chosen month (red) against the 3 months before it, in a marker-pen style on grid paper. Title uses the app's own font (Segoe UI).
+Why: Akshay's request, based on a reference picture.
+Approved by: Akshay
